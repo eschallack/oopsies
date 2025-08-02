@@ -5,7 +5,7 @@ There's a mountain of libraries out there for validating data, but not invalid d
 
 Planned features:
 
-- Dataclass to bad data: make data have issues relevant to your requirements. This will be a pydantic class or dataclass that specifies the requirements, which will be fed into the bad data engine to mess up your data.
+- Dataclass to bad data: make data have issues relevant to your requirements. This will be a duckdb table, which will be fed into the bad data engine to mess up your data.
 
         import oopsies
         import pydantic
@@ -44,9 +44,9 @@ By default, all rows and all fields of your data will now include issues, but th
 
 or 5 rows at the top or bottom of the dataset:
 
-    oopsframe = oopsies.Oops(df, User, num_rows=5, from='top')
+    oopsframe = oopsies.Oops(df, User, num_rows=5, align='top')
 
 sequentially mess up 1 field per row like this:
 
-    oopsframe = oopsies.Oops(df, User, seq=True, from='bottom')
+    oopsframe = oopsies.Oops(df, User, seq=True, align='bottom')
 
