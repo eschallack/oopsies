@@ -11,3 +11,4 @@ def rank(queries:list[str],target:str):
         key=lambda x: x[1][0],
         reverse=True
     )
+

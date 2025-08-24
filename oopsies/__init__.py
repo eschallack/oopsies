@@ -1,2 +1,1 @@
-from oopsies.main import Oops
-import oopsies.db
+from oopsies.faker_sqlalchemy import SqlAlchemyProvider

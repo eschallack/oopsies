@@ -68,6 +68,7 @@ from sqlalchemy.sql.type_api import TypeEngine
 from sqlalchemy import (inspect,Column,ARRAY,BigInteger,BINARY,Boolean,CLOB,Date,DateTime,Enum,Float,Integer,Interval,JSON,LargeBinary,Numeric,SmallInteger,Unicode,UnicodeText,String,Time)
 from sqlalchemy.sql.sqltypes import (BOOLEAN,VARCHAR,NullType,UUID,ARRAY,BIGINT,DATE,DATETIME,CHAR,DECIMAL,FLOAT,INTEGER,NCHAR,SMALLINT,TIMESTAMP,REAL,DOUBLE_PRECISION)
 from typing import get_type_hints
+from oopsies.type_interpreter import TypeInterpreter
 __version__ = "0.10.2208140"
 __all__ = (
     "SqlAlchemyProvider",
@@ -147,30 +148,6 @@ class SqlAlchemyProvider(BaseProvider):
     MAPPINGS = {}  # assume you fill this with DEFAULT_MAPPINGS elsewhere
 
     generator: Faker
-
-    def get_all_return_types(self, cls):
-        """Collect return type annotations for all functions in a class."""
-        results = {}
-        for name, member in insp.getmembers(cls, predicate=insp.isfunction):
-            try:
-                hints = get_type_hints(member)
-                ret_type = hints.get("return", insp.signature(member).return_annotation)
-            except Exception:
-                ret_type = insp.signature(member).return_annotation
-            if ret_type is insp._empty:
-                ret_type = None
-            results[name] = ret_type
-        return results
-    
-    def _get_type_to_faker_methods_recordset(self) -> list[Any]:
-        """Gets All provider methods from faker proxy, and returns a recordset of {type1:[methodname1,etc]...}
-
-        :return: _description_
-        :rtype: list[Any]
-        """
-        if not hasattr(self, 'faker_methods'):
-            self.faker_methods=self.scan_base_class(Faker)
-        return [{dt:[k for k, v in self.faker_methods.items() if v == dt]} for dt in list(set(self.faker_methods.values())) if dt and dt not in [Callable]]
            
     @classmethod
     def register_type_mapping(cls, type_, spec):
@@ -179,30 +156,6 @@ class SqlAlchemyProvider(BaseProvider):
     @classmethod
     def reset_type_mappings(cls):
         cls.MAPPINGS = {}
-
-    def scan_base_class(self, cls):
-        """Scan the Faker proxy for all provider methods and capture their return types."""
-        instance = cls()
-        results = {}
-        exclude_attrs = ['add_provider']
-        for attr in dir(instance):
-            if attr.startswith("_") or attr in exclude_attrs:
-                continue
-            try:
-                member = getattr(instance, attr)
-            except TypeError:
-                continue
-            if insp.isfunction(member) or insp.ismethod(member):
-                try:
-                    hints = get_type_hints(member)
-                    ret_type = hints.get("return", insp.signature(member).return_annotation)
-                except Exception:
-                    ret_type = insp.signature(member).return_annotation
-                if ret_type is insp._empty:
-                    ret_type = None
-               
-                results[member] = ret_type
-        return results
     
     def sqlalchemy_model(
             self, model: Type[ModelType], generate_primary_keys=False, generate_related=False, **overrides
@@ -213,7 +166,7 @@ class SqlAlchemyProvider(BaseProvider):
                                                               "MUST NOT both be set to True"
         self.inspection: Mapper = inspect(model)
         self.faker_instance = Faker()
-        self.method_map =self.scan_base_class(Faker)
+        self.method_map = TypeInterpreter.scan_base_class(Faker)
         values = {}
         for column in self.inspection.columns:
             if column.name in overrides:
