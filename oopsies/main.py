@@ -1,7 +1,9 @@
 import duckdb
 import pandas as pd
 from oopsies.engine import StrategyRegistry, OopsStrategy, registry
-        
+from sqlalchemy import *
+duckdb.execute(f"""INSTALL nanodbc FROM community;LOAD nanodbc;""")
+
 class Oops():
     df:pd.DataFrame
     oopsframe:pd.DataFrame = pd.DataFrame()
@@ -11,7 +13,8 @@ class Oops():
     
     def __init__(self, 
                  table:str,
-                 conn:duckdb.DuckDBPyConnection,
+                 conn:duckdb.DuckDBPyConnection=None,
+                 connectionString:str=None,
                  num_rows:int| None=None, 
                  percent:float=1,
                  align:str='top',
@@ -22,6 +25,8 @@ class Oops():
         :type table: str
         :param conn: a duckdb connection
         :type conn: duckdb.DuckDBPyConnection
+        :param connectionString: a foreign database connection string
+        :type conn: str
         :param num_rows: The number of rows to cause errors in, defaults to None
         :type num_rows: int | None, optional
         :param percent: the percentage of rows where mistakes should occur, defaults to 1
@@ -34,10 +39,19 @@ class Oops():
         self.__setattr__('df',conn.query(f"select * from {table}").to_df())
         self.__setattr__('_schema_info',conn.query(f"PRAGMA table_info('{table}')").to_df())
         self._generate_bad_data()
+        
     def __repr__(self):
         return repr(self.oopsframe)
     def __str__(self) -> str:
         return str(self.oopsframe)
+    def _get_dataframe(self, conn:duckdb.DuckDBPyConnection | str, table):
+        if isinstance(conn, duckdb.DuckDBPyConnection):
+            return
+        elif isinstance(conn, str):
+            duckdb.execute(f"""
+                               select * from odbc_query(
+    connection='MyODBCDSN',
+    query=N'select * from {table} limit 0',""")
     def _generate_bad_data(self):
         self.oopsframe = self.df.copy()
         

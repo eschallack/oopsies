@@ -74,7 +74,7 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
-
+dev/*
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -207,3 +207,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+t.ipynb
+examples/backup.py
+oopsies/db.py
+oopsies/main.py
